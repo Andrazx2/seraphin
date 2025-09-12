@@ -35,7 +35,7 @@ async def on_message(message):
         embed = discord.Embed(
             title="📝 Universal Script Loader",
             description=f"```lua\n{LOADSTRING_CODE}\n```",
-            color=0x5bc0de
+            color=0x836dc9
         )
         embed.set_footer(text="Copy & paste into your executor")
         await message.channel.send(embed=embed)
