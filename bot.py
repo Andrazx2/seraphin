@@ -40,7 +40,7 @@ async def rules(ctx):
             "We always obey the Discord TOS.\n"
             "👉 [Discord TOS](https://discord.com/terms)"
         ),
-        color=0xfc0404
+        color=0x836dc9
     )
     await ctx.send(embed=embed)
 
@@ -56,7 +56,7 @@ async def status(ctx):
             "🟡 - Updating and Not Working\n"
             "🔴 - Down"
         ),
-        color=0xfc0404
+        color=0x836dc9
     )
     await ctx.send(embed=embed)
 
@@ -67,7 +67,7 @@ async def download(ctx):
     embed = discord.Embed(
         title=":inbox_tray: Download Seraphin Windows ",
         description="[Download Link](https://getSeraphin.vercel.app)",
-        color=0xfc0404
+        color=0x836dc9
     )
     embed.set_footer(text="Seraphin Windows  • Download Link")
     await ctx.send(embed=embed)
@@ -79,7 +79,7 @@ async def changelog(ctx):
     embed = discord.Embed(
         title=":clipboard: Seraphin Windows  — Change Logs",
         description="Update new for **Seraphin Windows **",
-        color=0xfc0404
+        color=0x836dc9
     )
 
     embed.add_field(
