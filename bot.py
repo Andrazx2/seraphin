@@ -57,47 +57,20 @@ async def on_message(message):
         # 2) if fetch fails, send a short error message
         if fetched.startswith("ERROR:"):
             await message.channel.send(f"⚠️ Failed to fetch script: `{fetched}`")
-            # make sure commands still get processed
             await bot.process_commands(message)
             return
 
-        # 3) Create a simple English translation:
-        #    - translate Indonesian comments to English
-        #    - do not change the script logic
-        english_translation = fetched
-        english_translation = english_translation.replace("tambahin game lain kalau perlu", "add more games if needed")
-
-        # 4) Send embed with original (code block) and second embed with English explanation
+        # 3) send script content only (without translation)
         MAX_CHARS = 1900  # safe margin for code block wrapper
-
-        # send original
         if len(fetched) <= MAX_CHARS:
-            embed_orig = discord.Embed(title="📝 Universal Script (original)", color=0x836dc9)
+            embed_orig = discord.Embed(title="📝 Universal Script", color=0x836dc9)
             embed_orig.add_field(name="Raw content", value=f"```lua\n{fetched}\n```", inline=False)
             embed_orig.set_footer(text=f"Source: {UNIVERSAL_SCRIPT_RAW_URL}")
             await message.channel.send(embed=embed_orig)
         else:
-            await message.channel.send("📝 Universal Script (original):")
+            await message.channel.send("📝 Universal Script:")
             for i in range(0, len(fetched), MAX_CHARS):
                 part = fetched[i:i+MAX_CHARS]
-                await message.channel.send(f"```lua\n{part}\n```")
-
-        # send english translation / explanation
-        if len(english_translation) <= MAX_CHARS:
-            embed_eng = discord.Embed(title="🗣️ English translation / explanation", color=0x5bc0de)
-            explanation = (
-                "Below is a simple English translation of comments/notes in the script.\n"
-                "The script itself is unchanged — only comments/notes were translated where present.\n\n"
-                "Translation / notes:"
-            )
-            embed_eng.add_field(name="Notes", value=explanation, inline=False)
-            embed_eng.add_field(name="Translated script", value=f"```lua\n{english_translation}\n```", inline=False)
-            embed_eng.set_footer(text=f"Source: {UNIVERSAL_SCRIPT_RAW_URL}")
-            await message.channel.send(embed=embed_eng)
-        else:
-            await message.channel.send("🗣️ English translation / explanation:")
-            for i in range(0, len(english_translation), MAX_CHARS):
-                part = english_translation[i:i+MAX_CHARS]
                 await message.channel.send(f"```lua\n{part}\n```")
 
         return
@@ -198,7 +171,7 @@ async def changelogscripts(ctx):
     """Send script changelog"""
     embed = discord.Embed(
         title=":clipboard: Script Change Logs",
-        description="Latest updates for **Script**",
+        description="Latest updates for **Universal Script**",
         color=0x5bc0de
     )
 
@@ -222,7 +195,7 @@ async def changelogscripts(ctx):
         value="[Script Link](https://getSeraphin.vercel.app/script)",
         inline=False
     )
-    embed.set_footer(text="Seraphin Script — Official Update")
+    embed.set_footer(text="Universal Script — Official Update")
 
     await ctx.send(content="@everyone", embed=embed)
 
