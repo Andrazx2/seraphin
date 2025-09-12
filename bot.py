@@ -29,18 +29,15 @@ async def on_message(message):
 
     content = message.content
 
-    # ---------- Opsi 1: code block Lua (```lua ... ```)
-    if content.strip().startswith("```") and "lua" in content.splitlines()[0].lower():
-        lines = content.strip().splitlines()
-        # hapus baris pertama kalau ada "```lua"
-        if lines and lines[0].strip().lower().startswith("```lua"):
-            lines = lines[1:]
-        if lines and lines[-1].strip().startswith("```"):
-            lines = lines[:-1]
-        code_only = "\n".join(lines).strip()
+    # ---------- Jika pesan mengandung kata "script"
+    if "script" in content.lower():
+        # ambil teks setelah kata "script"
+        code_only = content.lower().replace("script", "", 1).strip()
+        if code_only == "":
+            code_only = "(tidak ada isi setelah kata script)"
 
         embed = discord.Embed(
-            title="📝 Script diterima",
+            title="📝 Script terdeteksi",
             description=f"```lua\n{code_only}\n```",
             color=0x836dc9
         )
@@ -48,20 +45,7 @@ async def on_message(message):
         await message.channel.send(embed=embed)
         return
 
-    # ---------- Opsi 2: pesan dimulai dengan "script "
-    if content.lower().startswith("script "):
-        code_only = content[len("script "):].strip()
-        await message.channel.send(f"Terima script:\n```lua\n{code_only}\n```")
-        return
-
-    # ---------- Opsi 3: mention bot + script
-    if bot.user in message.mentions:
-        cleaned = content.replace(f"<@!{bot.user.id}>", "").replace(f"<@{bot.user.id}>", "").strip()
-        if cleaned:
-            await message.channel.send(f"Terima script via mention:\n```lua\n{cleaned}\n```")
-            return
-
-    # pastikan command dengan prefix tetap jalan
+    # ---------- Tetap cek command dengan prefix
     await bot.process_commands(message)
 
 
