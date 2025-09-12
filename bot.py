@@ -15,7 +15,7 @@ intents.members = True
 bot = commands.Bot(command_prefix=PREFIX, intents=intents)
 
 # Raw file URL to fetch
-UNIVERSAL_SCRIPT_RAW_URL = "https://raw.githubusercontent.com/nniellx/SeraphinHub/main/Universal%20Script.lua"
+UNIVERSAL_SCRIPT_RAW_URL = "https://raw.githubusercontent.com/nniellx/SeraphinHub/main/SeraphinMain.lua"
 
 
 # ---- Event when bot is active ----
