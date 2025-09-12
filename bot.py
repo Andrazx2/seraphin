@@ -1,81 +1,47 @@
 import discord
 from discord.ext import commands
 import os
-import aiohttp
-import asyncio
 
 # ---- Configuration ----
-PREFIX = "!"  # Command prefix, you can change this for example: "?", "."
+PREFIX = "!"  # Can be changed
+UNIVERSAL_SCRIPT_RAW_URL = "https://raw.githubusercontent.com/nniellx/SeraphinHub/main/SeraphinMain.lua"
+LOADSTRING_CODE = f'loadstring(game:HttpGet("{UNIVERSAL_SCRIPT_RAW_URL}"))()'
 
-# intents required so the bot can read messages/members
+# intents so the bot can read message content and members
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 
 bot = commands.Bot(command_prefix=PREFIX, intents=intents)
 
-# Raw file URL to fetch
-UNIVERSAL_SCRIPT_RAW_URL = "https://raw.githubusercontent.com/nniellx/SeraphinHub/main/SeraphinMain.lua"
-
-
-# ---- Event when bot is active ----
+# ---- Event when bot is ready ----
 @bot.event
 async def on_ready():
     print(f"✅ Bot {bot.user} is now online!")
     await bot.change_presence(activity=discord.Game(name="Exploit"))
 
 
-# ---- Helper function: fetch text from URL (aiohttp) ----
-async def fetch_raw_text(url: str, timeout: int = 10) -> str:
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, timeout=timeout) as resp:
-                if resp.status == 200:
-                    return await resp.text()
-                else:
-                    return f"ERROR: HTTP {resp.status} while fetching {url}"
-    except asyncio.TimeoutError:
-        return f"ERROR: Timeout while fetching {url}"
-    except Exception as e:
-        return f"ERROR: Exception while fetching {url}: {e}"
-
-
 # ---- Event: catch messages without prefix ----
 @bot.event
 async def on_message(message):
-    # do not respond to messages from the bot itself
+    # ignore messages from the bot itself
     if message.author.bot:
         return
 
     content = message.content
 
-    # ---------- If the message contains the word "script"
+    # If message contains the word "script"
     if "script" in content.lower():
-        # 1) fetch the remote file content
-        fetched = await fetch_raw_text(UNIVERSAL_SCRIPT_RAW_URL)
-
-        # 2) if fetch fails, send a short error message
-        if fetched.startswith("ERROR:"):
-            await message.channel.send(f"⚠️ Failed to fetch script: `{fetched}`")
-            await bot.process_commands(message)
-            return
-
-        # 3) send script content only (without translation)
-        MAX_CHARS = 1900  # safe margin for code block wrapper
-        if len(fetched) <= MAX_CHARS:
-            embed_orig = discord.Embed(title="📝 Universal Script", color=0x836dc9)
-            embed_orig.add_field(name="Raw content", value=f"```lua\n{fetched}\n```", inline=False)
-            embed_orig.set_footer(text=f"Source: {UNIVERSAL_SCRIPT_RAW_URL}")
-            await message.channel.send(embed=embed_orig)
-        else:
-            await message.channel.send("📝 Universal Script:")
-            for i in range(0, len(fetched), MAX_CHARS):
-                part = fetched[i:i+MAX_CHARS]
-                await message.channel.send(f"```lua\n{part}\n```")
-
+        embed = discord.Embed(
+            title="📝 Universal Script Loader",
+            description=f"```lua\n{LOADSTRING_CODE}\n```",
+            color=0x5bc0de
+        )
+        embed.set_footer(text="Copy & paste into your executor")
+        await message.channel.send(embed=embed)
         return
 
-    # ---------- Still process commands with prefix
+    # still allow prefix commands to work
     await bot.process_commands(message)
 
 
@@ -88,15 +54,14 @@ async def ping(ctx):
 
 @bot.command()
 async def rules(ctx):
-    """Send server rules in an embed"""
+    """Send server rules"""
     embed = discord.Embed(
         title="📜 Server Rules",
         description=(
-            "**This LUA code based server is created for educational purposes only, "
-            "and we are not responsible for any of our clients using any way to violate the TOS.**\n\n"
-            "We won’t tolerate our members selling any sort of illegal items, "
-            "or posting malicious links. They will be instantly banned from our server.\n\n"
-            "We always obey Discord TOS.\n"
+            "**This LUA code-based server is for educational purposes only. "
+            "We are not responsible for any misuse that violates TOS.**\n\n"
+            "Members selling illegal items or posting malicious links will be banned instantly.\n\n"
+            "We always follow Discord TOS.\n"
             "👉 [Discord TOS](https://discord.com/terms)"
         ),
         color=0x836dc9
@@ -106,7 +71,7 @@ async def rules(ctx):
 
 @bot.command()
 async def status(ctx):
-    """Send status info embed"""
+    """Send status info"""
     embed = discord.Embed(
         title="Status Info",
         description=(
@@ -218,8 +183,8 @@ async def clear(ctx, amount: int = 5):
 
 @bot.command()
 async def send(ctx, *, message_text: str):
-    """Send a message to a specific channel"""
-    channel_id = 1396412369361436763  # replace with your target channel ID
+    """Send a message to a specific channel (change channel_id)"""
+    channel_id = 1396412369361436763  # replace with your channel ID
     channel = bot.get_channel(channel_id)
 
     if channel:
@@ -238,9 +203,21 @@ async def setprefix(ctx, new_prefix: str):
     await ctx.send(f"✅ Prefix changed to `{PREFIX}`")
 
 
+@bot.command()
+async def script(ctx):
+    """Send loadstring (command alternative to typing 'script')"""
+    embed = discord.Embed(
+        title="📝 Universal Script Loader",
+        description=f"```lua\n{LOADSTRING_CODE}\n```",
+        color=0x5bc0de
+    )
+    embed.set_footer(text="Copy & paste into your executor")
+    await ctx.send(embed=embed)
+
+
 # ---- Run Bot ----
-TOKEN = os.getenv("DISCORD_TOKEN")  # Get token from environment variable
+TOKEN = os.getenv("DISCORD_TOKEN")  # get token from environment
 if TOKEN is None:
-    print("❌ ERROR: Token not found! Make sure DISCORD_TOKEN is set in Railway.")
+    print("❌ ERROR: Token not found! Make sure DISCORD_TOKEN is set.")
 else:
     bot.run(TOKEN)
