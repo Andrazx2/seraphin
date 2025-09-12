@@ -20,6 +20,51 @@ async def on_ready():
     await bot.change_presence(activity=discord.Game(name="Exploit"))
 
 
+# ---- Event Tangkap Pesan Tanpa Prefix ----
+@bot.event
+async def on_message(message):
+    # jangan tanggapi pesan dari bot sendiri
+    if message.author.bot:
+        return
+
+    content = message.content
+
+    # ---------- Opsi 1: code block Lua (```lua ... ```)
+    if content.strip().startswith("```") and "lua" in content.splitlines()[0].lower():
+        lines = content.strip().splitlines()
+        # hapus baris pertama kalau ada "```lua"
+        if lines and lines[0].strip().lower().startswith("```lua"):
+            lines = lines[1:]
+        if lines and lines[-1].strip().startswith("```"):
+            lines = lines[:-1]
+        code_only = "\n".join(lines).strip()
+
+        embed = discord.Embed(
+            title="📝 Script diterima",
+            description=f"```lua\n{code_only}\n```",
+            color=0x836dc9
+        )
+        embed.set_footer(text=f"Dikirim oleh: {message.author.display_name}")
+        await message.channel.send(embed=embed)
+        return
+
+    # ---------- Opsi 2: pesan dimulai dengan "script "
+    if content.lower().startswith("script "):
+        code_only = content[len("script "):].strip()
+        await message.channel.send(f"Terima script:\n```lua\n{code_only}\n```")
+        return
+
+    # ---------- Opsi 3: mention bot + script
+    if bot.user in message.mentions:
+        cleaned = content.replace(f"<@!{bot.user.id}>", "").replace(f"<@{bot.user.id}>", "").strip()
+        if cleaned:
+            await message.channel.send(f"Terima script via mention:\n```lua\n{cleaned}\n```")
+            return
+
+    # pastikan command dengan prefix tetap jalan
+    await bot.process_commands(message)
+
+
 # ---- Command Dasar ----
 @bot.command()
 async def ping(ctx):
@@ -75,7 +120,7 @@ async def download(ctx):
 
 @bot.command()
 async def changelog(ctx):
-    """Kirim changelog rapi dengan embed"""
+    """Kirim changelog aplikasi"""
     embed = discord.Embed(
         title=":clipboard: Seraphin Windows  — Change Logs",
         description="Update new for **Seraphin Windows **",
@@ -103,6 +148,40 @@ async def changelog(ctx):
         inline=False
     )
     embed.set_footer(text="Seraphin Windows  — Official Update")
+
+    await ctx.send(content="@everyone", embed=embed)
+
+
+@bot.command()
+async def changelogscripts(ctx):
+    """Kirim changelog script"""
+    embed = discord.Embed(
+        title=":clipboard: Script Change Logs",
+        description="Update terbaru untuk **Script**",
+        color=0x5bc0de
+    )
+
+    embed.add_field(
+        name=":sparkles: Perubahan Utama",
+        value="```md\n- Tambah fungsi bypass request\n- Optimized hook performance\n```",
+        inline=False
+    )
+    embed.add_field(
+        name=":hammer: Perbaikan",
+        value="```md\n- Fix bug auto execute\n- Fix error di console output\n```",
+        inline=False
+    )
+    embed.add_field(
+        name=":rocket: Fitur Baru",
+        value="```md\n- Support Luarmor Compatibility\n- Auto detect executor\n```",
+        inline=False
+    )
+    embed.add_field(
+        name=":inbox_tray: Download / Copy",
+        value="[Script Link](https://getSeraphin.vercel.app/script)",
+        inline=False
+    )
+    embed.set_footer(text="Seraphin Script — Official Update")
 
     await ctx.send(content="@everyone", embed=embed)
 
@@ -151,5 +230,3 @@ if TOKEN is None:
     print("❌ ERROR: Token tidak ditemukan! Pastikan DISCORD_TOKEN sudah diset di Railway.")
 else:
     bot.run(TOKEN)
-
-
