@@ -4,7 +4,7 @@ import os
 
 # ---- Configuration ----
 PREFIX = "!"  # Can be changed
-UNIVERSAL_SCRIPT_RAW_URL = "https://raw.githubusercontent.com/andrazx2/SeraphinHub/main/SeraphinMain.lua"
+UNIVERSAL_SCRIPT_RAW_URL = "https://raw.githubusercontent.com/nniellx/SeraphinHub/main/SeraphinMain.lua"
 LOADSTRING_CODE = f'loadstring(game:HttpGet("{UNIVERSAL_SCRIPT_RAW_URL}"))()'
 
 # intents so the bot can read message content and members
