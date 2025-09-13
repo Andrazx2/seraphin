@@ -56,7 +56,6 @@ async def ping(ctx):
 async def rules(ctx):
     """Send server rules"""
     embed = discord.Embed(
-        title="📜 Server Rules",
         description=(
             "**This LUA code-based server is for educational purposes only. "
             "We are not responsible for any misuse that violates TOS.**\n\n"
