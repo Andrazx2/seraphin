@@ -6,7 +6,7 @@ import os
 PREFIX = "!"
 UNIVERSAL_SCRIPT_RAW_URL = "https://raw.githubusercontent.com/nniellx/SeraphinHub/main/SeraphinMain.lua"
 LOADSTRING_CODE = f'loadstring(game:HttpGet("{UNIVERSAL_SCRIPT_RAW_URL}"))()'
-ALLOWED_ROLE_ID = 1415257513368227992  # role yang boleh pakai ban
+ALLOWED_ROLE_ID = 1415257513368227992  # hanya role ini yg bisa ban/unban
 
 # intents
 intents = discord.Intents.default()
@@ -183,7 +183,7 @@ async def script(ctx):
     embed.set_footer(text="Copy & paste into your executor")
     await ctx.send(embed=embed)
 
-# ---- Ban Command (restricted to specific role) ----
+# ---- Ban Command ----
 @bot.command()
 async def ban(ctx, member: discord.Member, *, reason: str = "No reason provided"):
     """Ban member (only allowed role can use)"""
@@ -197,6 +197,29 @@ async def ban(ctx, member: discord.Member, *, reason: str = "No reason provided"
         await ctx.send(f"✅ {member.mention} has been banned.\n**Reason:** {reason}")
     except Exception as e:
         await ctx.send(f"❌ Failed to ban: {e}")
+
+# ---- Unban Command ----
+@bot.command()
+async def unban(ctx, user: str):
+    """Unban member (only allowed role can use)"""
+    role = discord.utils.get(ctx.author.roles, id=ALLOWED_ROLE_ID)
+    if role is None:
+        await ctx.send("❌ You don’t have permission to use this command.")
+        return
+
+    try:
+        banned_users = await ctx.guild.bans()
+        name, discriminator = user.split("#")
+
+        for ban_entry in banned_users:
+            if (ban_entry.user.name, ban_entry.user.discriminator) == (name, discriminator):
+                await ctx.guild.unban(ban_entry.user)
+                await ctx.send(f"✅ {ban_entry.user.mention} has been unbanned.")
+                return
+
+        await ctx.send("❌ User not found in ban list.")
+    except Exception as e:
+        await ctx.send(f"❌ Failed to unban: {e}")
 
 # ---- Run Bot ----
 TOKEN = os.getenv("DISCORD_TOKEN")
