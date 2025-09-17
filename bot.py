@@ -3,31 +3,32 @@ from discord.ext import commands
 import os
 
 # ---- Configuration ----
-PREFIX = "!"
+PREFIX = "!"  # Bisa diubah
 UNIVERSAL_SCRIPT_RAW_URL = "https://raw.githubusercontent.com/nniellx/SeraphinHub/main/SeraphinMain.lua"
 LOADSTRING_CODE = f'loadstring(game:HttpGet("{UNIVERSAL_SCRIPT_RAW_URL}"))()'
-ALLOWED_ROLE_ID = 1415257513368227992  # hanya role ini yg bisa ban/unban
+ROLE_ID = 1415257513368227992  # hanya role ini yang bisa ban/unban
 
 # intents
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
+intents.bans = True
 
 bot = commands.Bot(command_prefix=PREFIX, intents=intents)
 
-# ---- Event ----
+# ---- Event when bot is ready ----
 @bot.event
 async def on_ready():
     print(f"✅ Bot {bot.user} is now online!")
     await bot.change_presence(activity=discord.Game(name="Exploit"))
 
+# ---- Event: catch messages without prefix ----
 @bot.event
 async def on_message(message):
     if message.author.bot:
         return
 
     content = message.content
-
     if "script" in content.lower():
         embed = discord.Embed(
             title="📝 Universal Script Loader",
@@ -40,7 +41,68 @@ async def on_message(message):
 
     await bot.process_commands(message)
 
-# ---- Commands ----
+# ---- Helper: cek role ----
+def has_required_role(ctx):
+    return any(role.id == ROLE_ID for role in ctx.author.roles)
+
+# ---- Moderation Commands ----
+@bot.command()
+async def ban(ctx, user_id: int, *, reason: str = "No reason provided"):
+    """Ban member by ID"""
+    if not has_required_role(ctx):
+        await ctx.send("❌ Kamu tidak punya izin untuk ban.")
+        return
+    try:
+        user = await bot.fetch_user(user_id)
+        try:
+            await user.send(f"🚫 Kamu telah diban dari server **{ctx.guild.name}**.\n📝 Reason: {reason}")
+        except:
+            pass
+        await ctx.guild.ban(user, reason=reason)
+        await ctx.send(f"✅ {user} telah dibanned.\n📝 Reason: {reason}")
+    except Exception as e:
+        await ctx.send(f"❌ Gagal ban user. Error: {e}")
+
+@bot.command()
+async def unban(ctx, user_id: int):
+    """Unban member by ID"""
+    if not has_required_role(ctx):
+        await ctx.send("❌ Kamu tidak punya izin untuk unban.")
+        return
+    try:
+        user = await bot.fetch_user(user_id)
+        await ctx.guild.unban(user)
+        await ctx.send(f"✅ {user} telah di-unban.")
+    except Exception as e:
+        await ctx.send(f"❌ Gagal unban user. Error: {e}")
+
+@bot.command()
+async def banlist(ctx):
+    """Lihat semua user yang sedang diban"""
+    if not has_required_role(ctx):
+        await ctx.send("❌ Kamu tidak punya izin untuk melihat ban list.")
+        return
+    try:
+        bans = await ctx.guild.bans()
+        if not bans:
+            await ctx.send("📋 Ban list kosong.")
+            return
+        embed = discord.Embed(
+            title="📋 Ban List",
+            description=f"Total: {len(bans)} user(s) diban",
+            color=0xe74c3c
+        )
+        for entry in bans[:10]:
+            embed.add_field(
+                name=f"{entry.user} ({entry.user.id})",
+                value=f"Reason: {entry.reason or 'Tidak ada reason'}",
+                inline=False
+            )
+        await ctx.send(embed=embed)
+    except Exception as e:
+        await ctx.send(f"❌ Gagal mengambil ban list. Error: {e}")
+
+# ---- Basic Commands ----
 @bot.command()
 async def ping(ctx):
     await ctx.send(f"Pong! {round(bot.latency * 1000)}ms")
@@ -157,9 +219,8 @@ async def clear(ctx, amount: int = 5):
 
 @bot.command()
 async def send(ctx, *, message_text: str):
-    channel_id = 1396412369361436763  # ganti dengan ID channel kamu
+    channel_id = 1396412369361436763  # ganti dengan channel ID target
     channel = bot.get_channel(channel_id)
-
     if channel:
         await channel.send(message_text)
         await ctx.send(f"✅ Message sent to <#{channel_id}>")
@@ -182,44 +243,6 @@ async def script(ctx):
     )
     embed.set_footer(text="Copy & paste into your executor")
     await ctx.send(embed=embed)
-
-# ---- Ban Command ----
-@bot.command()
-async def ban(ctx, member: discord.Member, *, reason: str = "No reason provided"):
-    """Ban member (only allowed role can use)"""
-    role = discord.utils.get(ctx.author.roles, id=ALLOWED_ROLE_ID)
-    if role is None:
-        await ctx.send("❌ You don’t have permission to use this command.")
-        return
-
-    try:
-        await member.ban(reason=reason)
-        await ctx.send(f"✅ {member.mention} has been banned.\n**Reason:** {reason}")
-    except Exception as e:
-        await ctx.send(f"❌ Failed to ban: {e}")
-
-# ---- Unban Command ----
-@bot.command()
-async def unban(ctx, user: str):
-    """Unban member (only allowed role can use)"""
-    role = discord.utils.get(ctx.author.roles, id=ALLOWED_ROLE_ID)
-    if role is None:
-        await ctx.send("❌ You don’t have permission to use this command.")
-        return
-
-    try:
-        banned_users = await ctx.guild.bans()
-        name, discriminator = user.split("#")
-
-        for ban_entry in banned_users:
-            if (ban_entry.user.name, ban_entry.user.discriminator) == (name, discriminator):
-                await ctx.guild.unban(ban_entry.user)
-                await ctx.send(f"✅ {ban_entry.user.mention} has been unbanned.")
-                return
-
-        await ctx.send("❌ User not found in ban list.")
-    except Exception as e:
-        await ctx.send(f"❌ Failed to unban: {e}")
 
 # ---- Run Bot ----
 TOKEN = os.getenv("DISCORD_TOKEN")
