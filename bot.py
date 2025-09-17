@@ -1,6 +1,8 @@
 import discord
 from discord.ext import commands
 import os
+import time
+from collections import defaultdict
 
 # ---- Configuration ----
 PREFIX = "!"  # Can be changed
@@ -14,6 +16,13 @@ intents.members = True
 
 bot = commands.Bot(command_prefix=PREFIX, intents=intents)
 
+# ---- Anti-spam settings ----
+USER_COOLDOWN = 20    # detik per user
+CHANNEL_COOLDOWN = 10 # detik per channel
+
+_user_last: dict = defaultdict(lambda: 0.0)    # user_id -> last timestamp
+_channel_last: dict = defaultdict(lambda: 0.0) # channel_id -> last timestamp
+
 # ---- Event when bot is ready ----
 @bot.event
 async def on_ready():
@@ -24,14 +33,47 @@ async def on_ready():
 # ---- Event: catch messages without prefix ----
 @bot.event
 async def on_message(message):
-    # ignore messages from the bot itself
+    # ignore messages from the bot itself or other bots
     if message.author.bot:
         return
 
     content = message.content
 
+    # still allow prefix commands to work (process_commands must be awaited)
+    # but we want to check non-prefix messages first to possibly short-circuit spam replies
     # If message contains the word "script"
     if "script" in content.lower():
+        now = time.time()
+        user_id = message.author.id
+        channel_id = message.channel.id
+
+        # check cooldowns
+        user_elapsed = now - _user_last[user_id]
+        channel_elapsed = now - _channel_last[channel_id]
+
+        # if either cooldown not expired, send short warning and return
+        if user_elapsed < USER_COOLDOWN:
+            remaining = int(USER_COOLDOWN - user_elapsed)
+            warn = await message.channel.send(f"❌ Tunggu {remaining}s sebelum meminta `script` lagi, <@{user_id}>.")
+            try:
+                await warn.delete(delay=4)
+            except:
+                pass
+            return
+
+        if channel_elapsed < CHANNEL_COOLDOWN:
+            remaining = int(CHANNEL_COOLDOWN - channel_elapsed)
+            warn = await message.channel.send(f"❌ Channel ini masih cooldown ({remaining}s). Tunggu sebentar.")
+            try:
+                await warn.delete(delay=4)
+            except:
+                pass
+            return
+
+        # update timestamps (allow this request)
+        _user_last[user_id] = now
+        _channel_last[channel_id] = now
+
         embed = discord.Embed(
             title="📝 Universal Script Loader",
             description=f"```lua\n{LOADSTRING_CODE}\n```",
