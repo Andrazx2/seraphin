@@ -1,79 +1,34 @@
 import discord
 from discord.ext import commands
 import os
-import time
-from collections import defaultdict
 
 # ---- Configuration ----
-PREFIX = "!"  # Can be changed
+PREFIX = "!"
 UNIVERSAL_SCRIPT_RAW_URL = "https://raw.githubusercontent.com/nniellx/SeraphinHub/main/SeraphinMain.lua"
 LOADSTRING_CODE = f'loadstring(game:HttpGet("{UNIVERSAL_SCRIPT_RAW_URL}"))()'
+ALLOWED_ROLE_ID = 1415257513368227992  # role yang boleh pakai ban
 
-# intents so the bot can read message content and members
+# intents
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 
 bot = commands.Bot(command_prefix=PREFIX, intents=intents)
 
-# ---- Anti-spam settings ----
-USER_COOLDOWN = 20    # detik per user
-CHANNEL_COOLDOWN = 10 # detik per channel
-
-_user_last: dict = defaultdict(lambda: 0.0)    # user_id -> last timestamp
-_channel_last: dict = defaultdict(lambda: 0.0) # channel_id -> last timestamp
-
-# ---- Event when bot is ready ----
+# ---- Event ----
 @bot.event
 async def on_ready():
     print(f"✅ Bot {bot.user} is now online!")
     await bot.change_presence(activity=discord.Game(name="Exploit"))
 
-
-# ---- Event: catch messages without prefix ----
 @bot.event
 async def on_message(message):
-    # ignore messages from the bot itself or other bots
     if message.author.bot:
         return
 
     content = message.content
 
-    # still allow prefix commands to work (process_commands must be awaited)
-    # but we want to check non-prefix messages first to possibly short-circuit spam replies
-    # If message contains the word "script"
     if "script" in content.lower():
-        now = time.time()
-        user_id = message.author.id
-        channel_id = message.channel.id
-
-        # check cooldowns
-        user_elapsed = now - _user_last[user_id]
-        channel_elapsed = now - _channel_last[channel_id]
-
-        # if either cooldown not expired, send short warning and return
-        if user_elapsed < USER_COOLDOWN:
-            remaining = int(USER_COOLDOWN - user_elapsed)
-            warn = await message.channel.send(f"❌ Tunggu {remaining}s sebelum meminta `script` lagi, <@{user_id}>.")
-            try:
-                await warn.delete(delay=4)
-            except:
-                pass
-            return
-
-        if channel_elapsed < CHANNEL_COOLDOWN:
-            remaining = int(CHANNEL_COOLDOWN - channel_elapsed)
-            warn = await message.channel.send(f"❌ Channel ini masih cooldown ({remaining}s). Tunggu sebentar.")
-            try:
-                await warn.delete(delay=4)
-            except:
-                pass
-            return
-
-        # update timestamps (allow this request)
-        _user_last[user_id] = now
-        _channel_last[channel_id] = now
-
         embed = discord.Embed(
             title="📝 Universal Script Loader",
             description=f"```lua\n{LOADSTRING_CODE}\n```",
@@ -83,20 +38,15 @@ async def on_message(message):
         await message.channel.send(embed=embed)
         return
 
-    # still allow prefix commands to work
     await bot.process_commands(message)
 
-
-# ---- Basic Commands ----
+# ---- Commands ----
 @bot.command()
 async def ping(ctx):
-    """Test bot connection"""
     await ctx.send(f"Pong! {round(bot.latency * 1000)}ms")
-
 
 @bot.command()
 async def rules(ctx):
-    """Send server rules"""
     embed = discord.Embed(
         description=(
             "**This LUA code-based server is for educational purposes only. "
@@ -109,10 +59,8 @@ async def rules(ctx):
     )
     await ctx.send(embed=embed)
 
-
 @bot.command()
 async def status(ctx):
-    """Send status info"""
     embed = discord.Embed(
         title="Status Info",
         description=(
@@ -125,10 +73,8 @@ async def status(ctx):
     )
     await ctx.send(embed=embed)
 
-
 @bot.command()
 async def download(ctx):
-    """Send download link"""
     embed = discord.Embed(
         title=":inbox_tray: Download Seraphin Windows",
         description="[Download Link](https://getSeraphin.vercel.app)",
@@ -137,16 +83,13 @@ async def download(ctx):
     embed.set_footer(text="Seraphin Windows • Download Link")
     await ctx.send(embed=embed)
 
-
 @bot.command()
 async def changelog(ctx):
-    """Send application changelog"""
     embed = discord.Embed(
         title=":clipboard: Seraphin Windows — Change Logs",
         description="Latest updates for **Seraphin Windows**",
         color=0x836dc9
     )
-
     embed.add_field(
         name=":sparkles: Core Changes",
         value="```md\n- Updated to newest Roblox version\n- Improved stability and performance\n- Optimized memory usage\n```",
@@ -168,19 +111,15 @@ async def changelog(ctx):
         inline=False
     )
     embed.set_footer(text="Seraphin Windows — Official Update")
-
     await ctx.send(content="@everyone", embed=embed)
-
 
 @bot.command()
 async def changelogscripts(ctx):
-    """Send script changelog"""
     embed = discord.Embed(
         title=":clipboard: Script Change Logs",
         description="Latest updates for **Universal Script**",
         color=0x5bc0de
     )
-
     embed.add_field(
         name=":sparkles: Major Changes",
         value="```md\n- Added request bypass function\n- Optimized hook performance\n```",
@@ -202,30 +141,23 @@ async def changelogscripts(ctx):
         inline=False
     )
     embed.set_footer(text="Universal Script — Official Update")
-
     await ctx.send(content="@everyone", embed=embed)
-
 
 @bot.command()
 async def say(ctx, *, message_text: str):
-    """Bot repeats your message"""
     await ctx.send(message_text)
-
 
 @bot.command()
 async def clear(ctx, amount: int = 5):
-    """Delete messages (default 5)"""
     if ctx.author.guild_permissions.manage_messages:
         await ctx.channel.purge(limit=amount + 1)
         await ctx.send(f"🧹 {amount} messages deleted!", delete_after=3)
     else:
         await ctx.send("❌ You don’t have permission to delete messages.")
 
-
 @bot.command()
 async def send(ctx, *, message_text: str):
-    """Send a message to a specific channel (change channel_id)"""
-    channel_id = 1396412369361436763  # replace with your channel ID
+    channel_id = 1396412369361436763  # ganti dengan ID channel kamu
     channel = bot.get_channel(channel_id)
 
     if channel:
@@ -234,19 +166,15 @@ async def send(ctx, *, message_text: str):
     else:
         await ctx.send("❌ Channel not found or bot has no access.")
 
-
 @bot.command()
 async def setprefix(ctx, new_prefix: str):
-    """Change bot prefix"""
     global PREFIX
     PREFIX = new_prefix
     bot.command_prefix = PREFIX
     await ctx.send(f"✅ Prefix changed to `{PREFIX}`")
 
-
 @bot.command()
 async def script(ctx):
-    """Send loadstring (command alternative to typing 'script')"""
     embed = discord.Embed(
         title="📝 Universal Script Loader",
         description=f"```lua\n{LOADSTRING_CODE}\n```",
@@ -255,9 +183,23 @@ async def script(ctx):
     embed.set_footer(text="Copy & paste into your executor")
     await ctx.send(embed=embed)
 
+# ---- Ban Command (restricted to specific role) ----
+@bot.command()
+async def ban(ctx, member: discord.Member, *, reason: str = "No reason provided"):
+    """Ban member (only allowed role can use)"""
+    role = discord.utils.get(ctx.author.roles, id=ALLOWED_ROLE_ID)
+    if role is None:
+        await ctx.send("❌ You don’t have permission to use this command.")
+        return
+
+    try:
+        await member.ban(reason=reason)
+        await ctx.send(f"✅ {member.mention} has been banned.\n**Reason:** {reason}")
+    except Exception as e:
+        await ctx.send(f"❌ Failed to ban: {e}")
 
 # ---- Run Bot ----
-TOKEN = os.getenv("DISCORD_TOKEN")  # get token from environment
+TOKEN = os.getenv("DISCORD_TOKEN")
 if TOKEN is None:
     print("❌ ERROR: Token not found! Make sure DISCORD_TOKEN is set.")
 else:
