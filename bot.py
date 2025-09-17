@@ -1,13 +1,12 @@
 import discord
 from discord.ext import commands
-from discord import app_commands
 import os
 
 # ---- Configuration ----
-PREFIX = "!"
+PREFIX = "!"  # prefix command untuk command biasa
 UNIVERSAL_SCRIPT_RAW_URL = "https://raw.githubusercontent.com/nniellx/SeraphinHub/main/SeraphinMain.lua"
 LOADSTRING_CODE = f'loadstring(game:HttpGet("{UNIVERSAL_SCRIPT_RAW_URL}"))()'
-ROLE_ID = 1415257513368227992  # role yg bisa buat script publik
+ROLE_ID = 1415257513368227992  # Role yang bisa bikin script terlihat publik
 
 # intents
 intents = discord.Intents.default()
@@ -21,20 +20,53 @@ bot = commands.Bot(command_prefix=PREFIX, intents=intents)
 @bot.event
 async def on_ready():
     print(f"✅ Bot {bot.user} is now online!")
-    try:
-        await bot.tree.sync()
-        print("🔧 Slash commands synced!")
-    except Exception as e:
-        print(f"❌ Error syncing slash commands: {e}")
+    await bot.change_presence(activity=discord.Game(name="Exploit"))
 
 # ---- Helper: cek role ----
-def has_script_role(member: discord.Member) -> bool:
+def has_required_role(ctx):
+    return any(role.id == ROLE_ID for role in ctx.author.roles)
+
+def has_script_role(member: discord.Member):
     return any(role.id == ROLE_ID for role in member.roles)
+
+# ---- Event: catch messages ----
+@bot.event
+async def on_message(message: discord.Message):
+    if message.author.bot:
+        return
+
+    # Kalau user nulis persis "script"
+    if message.content.lower().strip() == "script":
+        embed = discord.Embed(
+            title="📝 Seraphin Script Loader",
+            description=f"```lua\n{LOADSTRING_CODE}\n```",
+            color=0x836dc9
+        )
+        embed.set_footer(text="Copy & paste into your executor")
+
+        if has_script_role(message.author):
+            # Role cocok → semua orang bisa lihat
+            await message.channel.send(embed=embed)
+            print(f"📢 {message.author} (ROLE OK) menampilkan script publik.")
+        else:
+            # Bukan role → pseudo ephemeral
+            try:
+                await message.delete()
+            except:
+                pass
+            temp = await message.channel.send(
+                f"{message.author.mention} ini script kamu 👇",
+                embed=embed
+            )
+            await temp.delete(delay=15)  # auto hapus biar orang lain nggak sempat lihat
+
+    # Proses command biasa tetap jalan
+    await bot.process_commands(message)
 
 # ---- Moderation Commands ----
 @bot.command()
 async def ban(ctx, user_id: int, *, reason: str = "No reason provided"):
-    if not any(role.id == ROLE_ID for role in ctx.author.roles):
+    if not has_required_role(ctx):
         await ctx.send("❌ Kamu tidak punya izin untuk ban.")
         return
     try:
@@ -50,7 +82,7 @@ async def ban(ctx, user_id: int, *, reason: str = "No reason provided"):
 
 @bot.command()
 async def unban(ctx, user_id: int):
-    if not any(role.id == ROLE_ID for role in ctx.author.roles):
+    if not has_required_role(ctx):
         await ctx.send("❌ Kamu tidak punya izin untuk unban.")
         return
     try:
@@ -62,7 +94,7 @@ async def unban(ctx, user_id: int):
 
 @bot.command()
 async def banlist(ctx):
-    if not any(role.id == ROLE_ID for role in ctx.author.roles):
+    if not has_required_role(ctx):
         await ctx.send("❌ Kamu tidak punya izin untuk melihat ban list.")
         return
     try:
@@ -216,23 +248,6 @@ async def setprefix(ctx, new_prefix: str):
     PREFIX = new_prefix
     bot.command_prefix = PREFIX
     await ctx.send(f"✅ Prefix changed to `{PREFIX}`")
-
-# ---- Slash Command: /script ----
-@bot.tree.command(name="script", description="Get the Seraphin Script Loader")
-async def script_slash(interaction: discord.Interaction):
-    embed = discord.Embed(
-        title="📝 Seraphin Script Loader",
-        description=f"```lua\n{LOADSTRING_CODE}\n```",
-        color=0x836dc9
-    )
-    embed.set_footer(text="Copy & paste into your executor")
-
-    if has_script_role(interaction.user):
-        # Role khusus -> publik
-        await interaction.response.send_message(embed=embed, ephemeral=False)
-    else:
-        # User biasa -> ephemeral (hanya dia lihat)
-        await interaction.response.send_message(embed=embed, ephemeral=True)
 
 # ---- Run Bot ----
 TOKEN = os.getenv("DISCORD_TOKEN")
