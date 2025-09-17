@@ -1,12 +1,17 @@
 import discord
 from discord.ext import commands
 import os
+import time
 
 # ---- Configuration ----
 PREFIX = "!"  # prefix command untuk command biasa
 UNIVERSAL_SCRIPT_RAW_URL = "https://raw.githubusercontent.com/nniellx/SeraphinHub/main/SeraphinMain.lua"
 LOADSTRING_CODE = f'loadstring(game:HttpGet("{UNIVERSAL_SCRIPT_RAW_URL}"))()'
 ROLE_ID = 1415257513368227992  # Role yang bisa bikin script terlihat publik
+COOLDOWN_SECONDS = 10  # cooldown per user
+
+# cooldown tracker
+user_cooldowns = {}
 
 # intents
 intents = discord.Intents.default()
@@ -37,6 +42,23 @@ async def on_message(message: discord.Message):
 
     # Kalau user nulis persis "script"
     if message.content.lower().strip() == "script":
+        now = time.time()
+        last_used = user_cooldowns.get(message.author.id, 0)
+
+        if now - last_used < COOLDOWN_SECONDS:
+            try:
+                await message.delete()
+            except:
+                pass
+            await message.channel.send(
+                f"{message.author.mention} tunggu {int(COOLDOWN_SECONDS - (now - last_used))} detik sebelum pakai lagi.",
+                delete_after=3
+            )
+            return
+
+        # Update cooldown
+        user_cooldowns[message.author.id] = now
+
         embed = discord.Embed(
             title="📝 Seraphin Script Loader",
             description=f"```lua\n{LOADSTRING_CODE}\n```",
@@ -58,7 +80,7 @@ async def on_message(message: discord.Message):
                 f"{message.author.mention} ini script kamu 👇",
                 embed=embed
             )
-            await temp.delete(delay=15)  # auto hapus biar orang lain nggak sempat lihat
+            await temp.delete(delay=5)
 
     # Proses command biasa tetap jalan
     await bot.process_commands(message)
